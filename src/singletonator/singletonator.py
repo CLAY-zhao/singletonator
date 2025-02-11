@@ -1,5 +1,7 @@
 from threading import Lock
 
+from .color_util import COLOR
+
 
 class SingletonatorMeta(type):
 
@@ -24,12 +26,14 @@ class SingletonatorMeta(type):
                 cls.print_subclasses()
                 
     @classmethod
-    def print_subclasses(cls):
+    def print_subclasses(cls, recursive: bool = False):
         if cls._subclasses:
-            print("All subclasses of Singletonator:")
             for subclass in cls._subclasses:
-                print(subclass.__subclasses__())
-                print(f"- {subclass.__name__}")
+                subclasses = subclass.__subclasses__()
+                COLOR.blue(f"- {subclass.__name__} (*{len(subclasses)})")
+                if recursive:
+                    for subsub in subclasses:
+                        COLOR.green(f"  * {subsub.__name__}")
         else:
             print("No subclasses found for Singletonator.")
     
@@ -41,5 +45,4 @@ class SingletonatorMeta(type):
 
 
 class Singletonator(metaclass=SingletonatorMeta):
-
     pass
