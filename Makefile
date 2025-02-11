@@ -26,9 +26,9 @@ test:
 clean:
 	rm -rf __pycache__
 	rm -rf tests/__pycache__
-	rm -rf src/pycodetrace/__pycache__
+	rm -rf src/singletonator/__pycache__
 	rm -rf build
 	rm -rf dist
-	rm -rf pycodetrace.egg-info
-	rm -rf src/pycodetrace.egg-info
-	pip uninstall -y pycodetrace
+	rm -rf singletonator.egg-info
+	rm -rf src/singletonator.egg-info
+	pip uninstall -y singletonator
