@@ -76,8 +76,7 @@ class Singletonator(metaclass=SingletonatorMeta):
     
     def __getattribute__(self, name):
         attr = super().__getattribute__(name)
-        if Singletonator._trace_method and callable(attr):
-
+        if Singletonator._trace_method and inspect.ismethod(attr) or inspect.isfunction(attr):
             def traced_method(*args, **kwargs):
                 signature = inspect.signature(attr)
                 bound_args = signature.bind(*args, **kwargs)
@@ -93,3 +92,8 @@ class Singletonator(metaclass=SingletonatorMeta):
             return traced_method
 
         return attr
+    
+    def __setattr__(self, name, value):
+        if isinstance(getattr(self.__class__, name, None), property):
+            print("Setting property")
+        super().__setattr__(name, value)
