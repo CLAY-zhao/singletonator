@@ -1,5 +1,5 @@
 import inspect
-from threading import Lock
+from threading import Lock, current_thread, main_thread
 
 from .color_util import COLOR
 
@@ -71,21 +71,44 @@ class SingletonatorMeta(type):
     def set_trace_method(cls, enabled: bool = True):
         cls._trace_method = enabled
 
+    @classmethod
+    def add_trace(cls, obj):
+        if not isinstance(obj, type):
+            obj = obj.__class__
+        ...
+
 
 class Singletonator(metaclass=SingletonatorMeta):
     
+    def _log_parameters(self, signature, bound_args):
+        for param_name, param in signature.parameters.items():
+            if param_name in bound_args.arguments:
+                param_value = bound_args.arguments[param_name]
+            else:
+                param_value = param.default if param.default != inspect.Parameter.empty else "No default"
+            default = param.default if param.default != inspect.Parameter.empty else 'No default'
+            param_type = param.annotation if param.annotation != inspect.Parameter.empty else type(param_value).__name__
+            COLOR.blue(f"{param_name} [Type: {param_type} | Default: {default} | Value: {param_value}]")
+    
     def __getattribute__(self, name):
         attr = super().__getattribute__(name)
-        if Singletonator._trace_method and inspect.ismethod(attr) or inspect.isfunction(attr):
+        if Singletonator._trace_method and inspect.isroutine(attr):
             def traced_method(*args, **kwargs):
                 signature = inspect.signature(attr)
                 bound_args = signature.bind(*args, **kwargs)
-                COLOR.red(f"====== Calling method: <{attr.__name__}> ======")
-                for param_name, param_value in bound_args.arguments.items():
-                    param = signature.parameters[param_name]
-                    param_type = param.annotation if param.annotation != inspect.Parameter.empty else type(param_value).__name__
-                    param_default = param.default if param.default != inspect.Parameter.empty else "No default"
-                    COLOR.green(f"{param_name} [Type: {param_type} | Default: {param_default} | Value: {param_value}]")
+                method_type = "Method" if inspect.ismethod(attr) else "Function"
+
+                current_thread_id = current_thread()
+                is_subthread = current_thread_id != main_thread()
+
+                COLOR.red(f"============= Calling {method_type}: <{attr.__name__}> =============")
+                if is_subthread:
+                    COLOR.red(f"Executing in subthread: [Thread Name: {current_thread_id.name} | Thread ID: {current_thread_id.ident}]")
+                else:
+                    COLOR.red("Executing in main thread")
+
+                object.__getattribute__(self, "_log_parameters")(signature, bound_args)
+
                 result = attr(*args, **kwargs)
                 return result
             

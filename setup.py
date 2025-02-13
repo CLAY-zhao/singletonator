@@ -30,7 +30,6 @@ setuptools.setup(
     package_data=package_data,
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -46,5 +45,5 @@ setuptools.setup(
         "Topic :: Software Development :: Bug Tracking",
         "Topic :: System :: Logging"
     ],
-    python_requires=">=3.6"
+    python_requires=">=3.7"
 )
