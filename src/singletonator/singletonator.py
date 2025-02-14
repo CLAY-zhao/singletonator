@@ -1,7 +1,9 @@
 import inspect
 from threading import Lock, current_thread, main_thread
 
+from .registry import SingletonatorRegistry
 from .color_util import COLOR
+from .decorator import MethodWrapper
 from .utils import get_members
 
 
@@ -49,7 +51,6 @@ class SingletonatorMeta(type):
             if show_list:
                 return print(list(map(lambda x: x.__name__, cls._subclasses)))
 
-            COLOR.red("====== Trace Subclasses ======")
             for subclass in cls._subclasses:
                 subclasses = subclass.__subclasses__()
                 if len(subclasses) > 0:
@@ -75,45 +76,13 @@ class SingletonatorMeta(type):
 
 class Singletonator(metaclass=SingletonatorMeta):
 
-    pass
-    
-    # def _log_parameters(self, signature, bound_args):
-    #     for param_name, param in signature.parameters.items():
-    #         if param_name in bound_args.arguments:
-    #             param_value = bound_args.arguments[param_name]
-    #         else:
-    #             param_value = param.default if param.default != inspect.Parameter.empty else "No default"
-    #         default = param.default if param.default != inspect.Parameter.empty else 'No default'
-    #         param_type = param.annotation if param.annotation != inspect.Parameter.empty else type(param_value).__name__
-    #         COLOR.blue(f"{param_name} [Type: {param_type} | Default: {default} | Value: {param_value}]")
-    
-    # def __getattribute__(self, name):
-    #     attr = super().__getattribute__(name)
-    #     if Singletonator._trace_method and inspect.isroutine(attr):
-    #         def traced_method(*args, **kwargs):
-    #             signature = inspect.signature(attr)
-    #             bound_args = signature.bind(*args, **kwargs)
-    #             method_type = "Method" if inspect.ismethod(attr) else "Function"
+    def call_share(self, identifier, *args, **kwargs):
+        share_method = SingletonatorRegistry.get_method(identifier)
+        if share_method:
+            if isinstance(share_method, MethodWrapper):
+                return share_method.func(*args, **kwargs)
+            return share_method(self, *args, **kwargs)
+        raise AttributeError(f"No shared method found with identifier '{identifier}'")
 
-    #             current_thread_id = current_thread()
-    #             is_subthread = current_thread_id != main_thread()
-
-    #             COLOR.red(f"============= Calling {method_type}: <{attr.__name__}> =============")
-    #             if is_subthread:
-    #                 COLOR.red(f"Executing in subthread: [Thread Name: {current_thread_id.name} | Thread ID: {current_thread_id.ident}]")
-    #             else:
-    #                 COLOR.red("Executing in main thread")
-
-    #             object.__getattribute__(self, "_log_parameters")(signature, bound_args)
-
-    #             result = attr(*args, **kwargs)
-    #             return result
-            
-    #         return traced_method
-
-    #     return attr
-    
-    # def __setattr__(self, name, value):
-    #     if isinstance(getattr(self.__class__, name, None), property):
-    #         print("Setting property")
-    #     super().__setattr__(name, value)
+    def get_share_method(self):
+        return SingletonatorRegistry.get_all_methods()
