@@ -4,7 +4,6 @@ from threading import Lock, current_thread, main_thread
 from .registry import SingletonatorRegistry
 from .color_util import COLOR
 from .decorator import MethodWrapper
-from .utils import get_members
 
 
 def recursive_subclasses(subclasses: list, tab: int = 2) -> None:
@@ -80,10 +79,9 @@ class Singletonator(metaclass=SingletonatorMeta):
         share_method = SingletonatorRegistry.get_method(identifier)
         if not share_method:
             raise AttributeError(f"No shared method found with identifier '{identifier}'")
-
         if isinstance(share_method, MethodWrapper):
-            return share_method.func(*args, **kwargs)
-        return share_method(self, *args, **kwargs)
+            return share_method(*args, **kwargs)
+        return share_method(*args, **kwargs)
 
     def get_share_method(self):
         return SingletonatorRegistry.get_all_methods()

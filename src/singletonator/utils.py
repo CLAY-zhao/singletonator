@@ -9,10 +9,7 @@ class MethodWrapper:
     def __get__(self, instance, owner):
         if instance is None:
             return self.func
-        try:
-            return lambda *args, **kwargs: self.func(instance, *args, **kwargs)
-        except TypeError:
-            return lambda : self.func(instance)
+        return lambda *args, **kwargs: self.func(*args, **kwargs)
 
 
 def isroutines(obj: object) -> bool:
