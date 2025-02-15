@@ -18,7 +18,7 @@ class SingletonatorRegistry:
     
     @classmethod
     def get_method(cls, identifier):
-        method = cls._shared_methods.get(identifier, None) or cls.__dict__.get(identifier, None)
+        method = cls._shared_methods.get(identifier, None) or getattr(cls(), identifier, None)
         return method
 
     @classmethod
