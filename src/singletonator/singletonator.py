@@ -75,8 +75,8 @@ class SingletonatorMeta(type):
 
 class Singletonator(metaclass=SingletonatorMeta):
 
-    def call_share(self, identifier, *args, **kwargs):
-        share_method = SingletonatorRegistry.get_method(identifier)
+    def call_share(self, identifier, *args, version=1, **kwargs):
+        share_method = SingletonatorRegistry.get_method(identifier, version)
         if not share_method:
             raise AttributeError(f"No shared method found with identifier '{identifier}'")
         if isinstance(share_method, MethodWrapper):
@@ -85,3 +85,6 @@ class Singletonator(metaclass=SingletonatorMeta):
 
     def get_share_method(self):
         return SingletonatorRegistry.get_all_methods()
+    
+    def reload_share_method(self, method, identifier):
+        SingletonatorRegistry.reload_shared_method(method, identifier)
