@@ -8,14 +8,15 @@ from .utils import MethodWrapper
 def singleton_extend(
         method: Optional[Callable] = None,
         alias: str = None,
-        version: int = 1
+        version: int = 1,
+        permission_level: int = None
     ) -> Callable:
 
     def inner(func: Optional[Callable]) -> Callable:
         nonlocal alias
         if alias is None:
             alias = method.__name__ if method is not None else func.__name__
-        SingletonatorRegistry.register_method(method or func, alias, version)
+        SingletonatorRegistry.register_method(method or func, alias, version, permission_level)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

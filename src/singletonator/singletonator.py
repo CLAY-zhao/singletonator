@@ -3,6 +3,8 @@ from threading import Lock
 from .registry import SingletonatorRegistry
 from .color_util import COLOR
 from .decorator import MethodWrapper
+from .permission import SingletonPermissionGroup
+from .exceptions import CallPermissionError
 
 
 def recursive_subclasses(subclasses: list, tab: int = 2) -> None:
@@ -20,6 +22,7 @@ class SingletonatorMeta(type):
     _subclasses = []
     _print_subclasses = False
     _trace_method = False
+    _permission_group = None
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instance:
@@ -27,6 +30,7 @@ class SingletonatorMeta(type):
                 if cls not in cls._instance:
                     instance = super().__call__(*args, **kwargs)
                     instance._trace_method = cls._trace_method
+                    instance._permission_group = cls._permission_group
                     cls._instance[cls] = instance
         return cls._instance[cls]
     
@@ -70,9 +74,13 @@ class SingletonatorMeta(type):
     @classmethod
     def set_trace_method(cls, enabled: bool = True):
         cls._trace_method = enabled
-
+        
+    def set_permission(self, permission_group: SingletonPermissionGroup):
+        self._permission_group = permission_group
+    
 
 class Singletonator(metaclass=SingletonatorMeta):
+    class_permission = None
 
     def call_share(self, alias, *args, version=1, **kwargs):
         share_method = SingletonatorRegistry.get_method(alias, version)
@@ -80,7 +88,14 @@ class Singletonator(metaclass=SingletonatorMeta):
             raise AttributeError(f"No shared method found with alias '{alias}', version: '{version}'")
         if isinstance(share_method, MethodWrapper):
             return share_method(*args, **kwargs)
-        return share_method(*args, **kwargs)
+        func = share_method["method"]
+        required_permission = share_method["level"]
+        if not self._permission_group.has_permission(required_permission):
+            raise CallPermissionError(
+                f"Class '{self.__class__.__name__}' does not have permission to call '{alias}' (version {version}). "
+                f"Required permission: {required_permission}."
+            )
+        return func(*args, **kwargs)
     
     def call_sequence(self, *call):
         pass

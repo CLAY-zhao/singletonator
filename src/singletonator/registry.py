@@ -7,7 +7,13 @@ class SingletonatorRegistry:
     _shared_methods = {}
     
     @classmethod
-    def register_method(cls, method: Callable, alias: str = None, version: int = 1):
+    def register_method(
+        cls,
+        method: Callable,
+        alias: str = None,
+        version: int = 1,
+        permission_level: int = None
+    ) -> Callable:
         if alias in cls._shared_methods:
             if version in cls._shared_methods[alias]:
                 raise ValueError(
@@ -19,7 +25,7 @@ class SingletonatorRegistry:
             cls._shared_methods[alias] = {}
         
         if not isinstance(method, MethodWrapper):
-            cls._shared_methods[alias][version] = method
+            cls._shared_methods[alias][version] = {"method": method, "level": permission_level}
         else:
             setattr(cls, alias, method)
         return method
@@ -32,7 +38,7 @@ class SingletonatorRegistry:
                 f"Available aliases: {list(cls._shared_methods.keys())}. "
                 f"To register a new alias, use the @singleton_extend decorator."
             )
-        cls._shared_methods[alias][version] = method
+        cls._shared_methods[alias][version]["method"] = method
     
     @classmethod
     def get_method(cls, alias: str, version: int):

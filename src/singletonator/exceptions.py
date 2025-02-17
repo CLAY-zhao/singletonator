@@ -1,0 +1,2 @@
+class CallPermissionError(Exception):
+    pass
