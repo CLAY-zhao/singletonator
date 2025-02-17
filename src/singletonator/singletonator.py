@@ -82,6 +82,9 @@ class Singletonator(metaclass=SingletonatorMeta):
             return share_method(*args, **kwargs)
         return share_method(*args, **kwargs)
     
+    def call_sequence(self, *call):
+        pass
+    
     def get_share_method(self):
         return SingletonatorRegistry.get_all_methods()
     

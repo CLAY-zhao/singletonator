@@ -26,8 +26,13 @@ class SingletonatorRegistry:
     
     @classmethod
     def reload_shared_method(cls, method, alias: str, version: int):
-        if alias in cls._shared_methods:
-            cls._shared_methods[alias][version] = method
+        if alias not in cls._shared_methods:
+            raise ValueError(
+                f"Alias '{alias}' does not exist. "
+                f"Available aliases: {list(cls._shared_methods.keys())}. "
+                f"To register a new alias, use the @singleton_extend decorator."
+            )
+        cls._shared_methods[alias][version] = method
     
     @classmethod
     def get_method(cls, alias: str, version: int):
@@ -38,4 +43,4 @@ class SingletonatorRegistry:
 
     @classmethod
     def get_all_methods(cls):
-        return cls._shared_methods.keys()
+        return list(cls._shared_methods.keys())
