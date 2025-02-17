@@ -8,9 +8,8 @@ class SingletonatorRegistry:
     
     @classmethod
     def register_method(cls, method: Callable, identifier: str = None, version: int = 1):
-        print(f"registering method: {identifier} with version: {version}")
         if identifier in cls._shared_methods:
-            if cls._shared_methods[identifier][version]:
+            if version in cls._shared_methods[identifier]:
                 raise ValueError(
                     f"Method with identifier '{identifier}' already exists. "
                     f"Current version: {list(cls._shared_methods[identifier].keys())}. "
@@ -19,10 +18,8 @@ class SingletonatorRegistry:
         else:
             cls._shared_methods[identifier] = {}
         
-        print(666, method, version)
         if not isinstance(method, MethodWrapper):
             cls._shared_methods[identifier][version] = method
-            print(111, cls._shared_methods)
         else:
             setattr(cls, identifier, method)
         return method
