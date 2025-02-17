@@ -1,5 +1,4 @@
-import inspect
-from threading import Lock, current_thread, main_thread
+from threading import Lock
 
 from .registry import SingletonatorRegistry
 from .color_util import COLOR
@@ -75,16 +74,16 @@ class SingletonatorMeta(type):
 
 class Singletonator(metaclass=SingletonatorMeta):
 
-    def call_share(self, identifier, *args, version=1, **kwargs):
-        share_method = SingletonatorRegistry.get_method(identifier, version)
+    def call_share(self, alias, *args, version=1, **kwargs):
+        share_method = SingletonatorRegistry.get_method(alias, version)
         if not share_method:
-            raise AttributeError(f"No shared method found with identifier '{identifier}', version: '{version}'")
+            raise AttributeError(f"No shared method found with alias '{alias}', version: '{version}'")
         if isinstance(share_method, MethodWrapper):
             return share_method(*args, **kwargs)
         return share_method(*args, **kwargs)
-
+    
     def get_share_method(self):
         return SingletonatorRegistry.get_all_methods()
     
-    def reload_share_method(self, method, identifier):
-        SingletonatorRegistry.reload_shared_method(method, identifier)
+    def reload_share_method(self, method, alias):
+        SingletonatorRegistry.reload_shared_method(method, alias)

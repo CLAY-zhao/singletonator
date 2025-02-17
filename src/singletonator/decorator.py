@@ -7,17 +7,15 @@ from .utils import MethodWrapper
 
 def singleton_extend(
         method: Optional[Callable] = None,
-        identifier: str = None,
+        alias: str = None,
         version: int = 1
     ) -> Callable:
 
     def inner(func: Optional[Callable]) -> Callable:
-        nonlocal identifier
-        if identifier is None:
-            identifier = method.__name__ if method is not None else func.__name__
-        # method_wrapper = MethodWrapper(method)
-        # SingletonatorRegistry.register_method(method_wrapper, identifier)
-        SingletonatorRegistry.register_method(method or func, identifier, version)
+        nonlocal alias
+        if alias is None:
+            alias = method.__name__ if method is not None else func.__name__
+        SingletonatorRegistry.register_method(method or func, alias, version)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -28,3 +26,14 @@ def singleton_extend(
     if method:
         return inner(method)
     return inner
+
+
+def hot_reload(alias: str, version: int, new_func: Optional[Callable]):
+    if not alias:
+        raise ValueError("Alias cannot be empty. Please provide a valid alias for the method.")
+    if version < 1:
+        raise ValueError(f"Version must be at least 1. Received version: {version}.")
+    if new_func is None:
+        raise ValueError("New function cannot be None. Please provide a valid callable function.")
+    
+    SingletonatorRegistry.reload_shared_method(new_func, alias, version)
