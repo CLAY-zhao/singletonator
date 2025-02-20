@@ -93,7 +93,7 @@ class Singletonator(metaclass=SingletonatorMeta):
         if not self._permission_group.has_permission(required_permission):
             raise CallPermissionError(
                 f"Class '{self.__class__.__name__}' does not have permission to call '{alias}' (version {version}). "
-                f"Required permission: {required_permission}."
+                f"Required permission: {required_permission}"
             )
         return func(*args, **kwargs)
     

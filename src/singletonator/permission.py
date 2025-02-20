@@ -5,5 +5,7 @@ class SingletonPermissionGroup(object):
         self.permission_level = permission_level
     
     def has_permission(self, required_permission: int):
-        return required_permission >= self.permission_level
-    
+        return self.permission_level >= required_permission
+
+    def __str__(self):
+        pass
