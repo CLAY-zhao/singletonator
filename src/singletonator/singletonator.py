@@ -1,4 +1,8 @@
-from threading import Lock
+import sys
+import json
+import faulthandler
+import traceback
+import threading
 
 from .registry import SingletonatorRegistry
 from .color_util import COLOR
@@ -18,7 +22,7 @@ def recursive_subclasses(subclasses: list, tab: int = 2) -> None:
 class SingletonatorMeta(type):
 
     _instance = {}
-    _lock = Lock()
+    _lock = threading.Lock()
     _subclasses = []
     _print_subclasses = False
     _trace_method = False
@@ -90,7 +94,7 @@ class Singletonator(metaclass=SingletonatorMeta):
             return share_method(*args, **kwargs)
         func = share_method["method"]
         required_permission = share_method["level"]
-        if not self._permission_group.has_permission(required_permission):
+        if self._permission_group and not self._permission_group.has_permission(required_permission):
             raise CallPermissionError(
                 f"Class '{self.__class__.__name__}' does not have permission to call '{alias}' (version {version}). "
                 f"Required permission: {required_permission}"
@@ -105,3 +109,48 @@ class Singletonator(metaclass=SingletonatorMeta):
     
     def reload_share_method(self, method, alias):
         SingletonatorRegistry.reload_shared_method(method, alias)
+
+    @classmethod
+    def _generate_debug_report(cls, exception=None, exc_traceback=None):
+        stack_trace = traceback.extract_stack()
+
+        if exc_traceback:
+            exception_trace = traceback.extract_tb(exc_traceback)
+            stack_trace.extend(exception_trace)
+
+        report = {
+            "shared_methods": SingletonatorRegistry.get_all_methods(),
+            # "singleton_state": vars(Singletonator) if cls._instance else None,
+            "stack_trace": [],
+            "exception": str(exception) if exception else None
+        }
+        
+        for frame in stack_trace:
+            report["stack_trace"].append({
+                "filename": frame.filename,
+                "lineno": frame.lineno,
+                "function": frame.name,
+                "code": frame.line,
+                "is_exception_frame": frame in exception_trace if exc_traceback else False
+            })
+
+        with open("crash.json", "w") as f:
+            json.dump(report, f, indent=4)
+
+    @classmethod
+    def enable_crash_reporting(cls):
+        faulthandler.enable(file=open("crash.log", "w"))
+
+        def global_excepthook(exc_type, exc_value, exc_traceback):
+            cls._generate_debug_report(exc_value, exc_traceback)
+            
+            with open("crash.log", "a") as file:
+                file.write("Python Exception:\n")
+                traceback.print_exception(exc_type, exc_value, exc_traceback, file=file)
+                file.write("\nFull Stack Trace:\n")
+                traceback.print_stack(file=file)
+
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+        sys.excepthook = global_excepthook
+        threading.excepthook = global_excepthook
