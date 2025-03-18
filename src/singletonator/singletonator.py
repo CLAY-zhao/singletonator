@@ -1,6 +1,7 @@
-import sys
-import json
+import atexit
 import faulthandler
+import json
+import sys
 import traceback
 import threading
 
@@ -9,6 +10,7 @@ from .color_util import COLOR
 from .decorator import MethodWrapper
 from .permission import SingletonPermissionGroup
 from .exceptions import CallPermissionError
+from .reporting import generate_html_report
 
 
 def recursive_subclasses(subclasses: list, tab: int = 2) -> None:
@@ -111,22 +113,23 @@ class Singletonator(metaclass=SingletonatorMeta):
         SingletonatorRegistry.reload_shared_method(method, alias)
 
     @classmethod
-    def _generate_debug_report(cls, exception=None, exc_traceback=None):
+    def _generate_debug_report(cls, exception=None, exc_traceback=None, do_open=True):
         stack_trace = traceback.extract_stack()
 
         if exc_traceback:
             exception_trace = traceback.extract_tb(exc_traceback)
             stack_trace.extend(exception_trace)
 
-        report = {
-            "shared_methods": SingletonatorRegistry.get_all_methods(),
-            # "singleton_state": vars(Singletonator) if cls._instance else None,
-            "stack_trace": [],
-            "exception": str(exception) if exception else None
-        }
+        if not hasattr(cls, "_report"):
+            cls._report = {
+                "shared_methods": SingletonatorRegistry.get_all_methods(),
+                # "singleton_state": vars(Singletonator) if cls._instance else None,
+                "stack_trace": [],
+                "exception": str(exception) if exception else None
+            }
         
         for frame in stack_trace:
-            report["stack_trace"].append({
+            cls._report["stack_trace"].append({
                 "filename": frame.filename,
                 "lineno": frame.lineno,
                 "function": frame.name,
@@ -134,23 +137,34 @@ class Singletonator(metaclass=SingletonatorMeta):
                 "is_exception_frame": frame in exception_trace if exc_traceback else False
             })
 
+        def stack_trace_report(report_dict):
+            generate_html_report(report_dict, do_open=do_open)
+
         with open("crash.json", "w") as f:
-            json.dump(report, f, indent=4)
+            json.dump(cls._report, f, indent=4)
+
+            atexit.register(stack_trace_report, cls._report)
 
     @classmethod
-    def enable_crash_reporting(cls):
+    def enable_crash_reporting(cls, do_open: bool = True):
         faulthandler.enable(file=open("crash.log", "w"))
 
         def global_excepthook(exc_type, exc_value, exc_traceback):
             cls._generate_debug_report(exc_value, exc_traceback)
             
-            with open("crash.log", "a") as file:
-                file.write("Python Exception:\n")
-                traceback.print_exception(exc_type, exc_value, exc_traceback, file=file)
-                file.write("\nFull Stack Trace:\n")
-                traceback.print_stack(file=file)
+            # with open("crash.log", "a") as file:
+            #     file.write("Python Exception:\n")
+            #     traceback.print_exception(exc_type, exc_value, exc_traceback, file=file)
+            #     file.write("\nFull Stack Trace:\n")
+            #     traceback.print_stack(file=file)
 
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
+        def threading_excepthook(args):
+            exc_type = args.exc_type
+            exc_value = args.exc_value
+            exc_traceback = args.exc_traceback
+            global_excepthook(exc_type, exc_value, exc_traceback)
+
         sys.excepthook = global_excepthook
-        threading.excepthook = global_excepthook
+        threading.excepthook = threading_excepthook
